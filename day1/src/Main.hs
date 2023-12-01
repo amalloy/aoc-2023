@@ -15,8 +15,15 @@ type Input = [String]
 calibrationValue :: [Int] -> Int
 calibrationValue = ((+) <$> ((* 10) . head) <*> last)
 
+guardedBy :: (a -> b) -> (a -> Bool) -> a -> Maybe b
+guardedBy f p x | p x = Just $ f x
+                | otherwise = Nothing
+
+solve :: (b -> Maybe Int) -> (a -> [b]) -> [a] -> Int
+solve f g = sum . map (calibrationValue . mapMaybe f . g)
+
 part1 :: Input -> Int
-part1 = sum . map (calibrationValue . map digitToInt . filter isDigit)
+part1 = solve (digitToInt `guardedBy` isDigit) id
 
 digits :: [(String, Int)]
 digits = [ ("one", 1), ("two", 2), ("three", 3), ("four", 4)
@@ -25,7 +32,7 @@ digits = [ ("one", 1), ("two", 2), ("three", 3), ("four", 4)
          [(pure (intToDigit x), x) | x <- [1..9]]
 
 part2 :: Input -> Int
-part2 = sum . map (calibrationValue . (mapMaybe decodeDigit . tails))
+part2 = solve decodeDigit tails
   where decodeDigit :: String -> Maybe Int
         decodeDigit s = getFirst . mconcat . map (First . find) $ digits
           where find (k, v) | k `isPrefixOf` s = Just v
