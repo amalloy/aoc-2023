@@ -29,4 +29,4 @@ executable day1
                      , mtl
                      , transformers
                      , QuickCheck
-
+

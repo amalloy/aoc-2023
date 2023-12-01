@@ -18,4 +18,4 @@ prepare = lines
 
 main :: IO ()
 main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
-
+
