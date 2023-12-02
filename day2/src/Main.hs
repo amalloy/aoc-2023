@@ -41,10 +41,10 @@ combine :: Game [Pull] -> Game Pull
 combine = fmap (M.unionsWith max)
 
 part1 :: Input -> Int
-part1 = sum . map gid . filter possible . map combine
-  where possible (Game _ p) = M.unionWith max p limit == limit
+part1 = sum . mapMaybe (score . combine)
+  where score (Game gid p) | M.unionWith max p limit == limit = Just gid
+                           | otherwise = Nothing
         limit = M.fromList [(Red, 12), (Green, 13), (Blue, 14)]
-        gid (Game g _) = g
 
 part2 :: Input -> Int
 part2 = sum . map (power . combine)
