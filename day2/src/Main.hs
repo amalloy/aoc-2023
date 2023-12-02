@@ -16,9 +16,6 @@ data Color = Red | Green | Blue deriving (Show, Eq, Ord, Enum, Bounded)
 type Pull = M.Map Color Int
 data Game a = Game Int a deriving (Show, Functor)
 
-range :: (Enum a, Bounded a) => [a]
-range = [minBound..maxBound]
-
 type Parser a = RE Char a
 
 space :: Parser ()
@@ -28,7 +25,7 @@ sepBy :: Alternative f => f a -> f b -> f [a]
 p `sepBy` sep = (:) <$> p <*> many (sep *> p)
 
 color :: Parser Color
-color = asum [c <$ string (map toLower (show c)) | c <- range]
+color = asum [c <$ string (map toLower (show c)) | c <- [minBound..maxBound]]
 
 oneColorPull :: Parser Pull
 oneColorPull = go <$> decimal <* space <*> color
