@@ -49,7 +49,7 @@ part1 = sum . map gid . filter possible . map combine
         gid (Game g _) = g
 
 part2 :: Input -> Int
-part2 = sum . map power . map combine
+part2 = sum . map (power . combine)
   where power (Game _ p) = product (M.elems p)
 
 prepare :: String -> Input
