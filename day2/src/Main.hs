@@ -15,6 +15,7 @@ import Text.Regex.Applicative.Common (decimal)
 data Color = Red | Green | Blue deriving (Show, Eq, Ord, Enum, Bounded)
 type Pull = M.Map Color Int
 data Game a = Game Int a deriving (Show, Functor)
+type Input = [Game [Pull]]
 
 type Parser a = RE Char a
 
@@ -36,8 +37,6 @@ pull = M.unionsWith (+) <$> oneColorPull `sepBy` string ", "
 
 game :: Parser (Game [Pull])
 game = Game <$> (string "Game " *> decimal) <* string ": " <*> pull `sepBy` string "; "
-
-type Input = [Game [Pull]]
 
 combine :: Game [Pull] -> Game Pull
 combine = fmap (M.unionsWith max)
