@@ -29,8 +29,7 @@ color :: Parser Color
 color = asum [c <$ string (map toLower (show c)) | c <- [minBound..maxBound]]
 
 oneColorPull :: Parser Pull
-oneColorPull = go <$> decimal <* space <*> color
-  where go num c = M.singleton c num
+oneColorPull = flip M.singleton <$> decimal <* space <*> color
 
 pull :: Parser Pull
 pull = M.unionsWith (+) <$> oneColorPull `sepBy` string ", "
