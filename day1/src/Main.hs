@@ -3,12 +3,12 @@
 
 module Main where
 
+import Control.Applicative (asum)
 import Control.Arrow ((&&&))
 
 import Data.Char (isDigit, digitToInt, intToDigit)
 import Data.List (isPrefixOf, tails)
 import Data.Maybe (mapMaybe)
-import Data.Monoid (First(..))
 
 type Input = [String]
 
@@ -25,7 +25,7 @@ part1 = solve (digitToInt `guardedBy` isDigit) id
 part2 :: Input -> Int
 part2 = solve decodeDigit tails
   where decodeDigit :: String -> Maybe Int
-        decodeDigit s = getFirst . mconcat . map (First . find) $ digits
+        decodeDigit s = asum  . map find $ digits
           where find (k, v) | k `isPrefixOf` s = Just v
                             | otherwise = Nothing
         digits = [ ("one", 1), ("two", 2), ("three", 3), ("four", 4)
