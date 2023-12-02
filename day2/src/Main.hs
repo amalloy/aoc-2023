@@ -42,17 +42,18 @@ game = Game <$> (string "Game " *> decimal) <* string ": " <*> pull `sepBy` stri
 
 type Input = [Game [Pull]]
 
-gid :: Game a -> Int
-gid (Game g _) = g
+combine :: Game [Pull] -> Game Pull
+combine = fmap (M.unionsWith max)
 
 part1 :: Input -> Int
 part1 = sum . map gid . filter possible . map combine
   where possible (Game _ p) = M.unionWith max p limit == limit
         limit = M.fromList [(Red, 12), (Green, 13), (Blue, 14)]
-        combine = fmap (M.unionsWith max)
+        gid (Game g _) = g
 
-part2 :: Input -> ()
-part2 = const ()
+part2 :: Input -> Int
+part2 = sum . map power . map combine
+  where power (Game _ p) = product (M.elems p)
 
 prepare :: String -> Input
 prepare = mapMaybe (=~ game) . lines
