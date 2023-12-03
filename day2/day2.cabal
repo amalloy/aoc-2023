@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 executable day2
   hs-source-dirs:      src
   main-is:             Main.hs
-  default-language:    Haskell2010
+  default-language:    GHC2021
   ghc-options:
               -Wall
               -Wcompat
@@ -29,4 +29,3 @@ executable day2
                      , mtl
                      , transformers
                      , QuickCheck
-
