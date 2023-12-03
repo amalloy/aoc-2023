@@ -14,7 +14,7 @@ import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.Set qualified as S
 
-import Text.Regex.Applicative (RE, psym, (=~))
+import Text.Regex.Applicative (RE, sym, psym, (=~))
 
 data Coord = Coord {_x, _y :: Int} deriving (Show, Eq, Ord)
 newtype Symbol = Symbol Char deriving (Show, Eq, Ord)
@@ -31,16 +31,13 @@ neighbors (Coord x y) = S.fromList $ do
 
 type Parser a = RE Char a
 
-measured :: (Char -> Bool) -> (String -> a) -> Parser (Measured a)
-measured p f = do
-  region <- some (psym p)
-  pure (Measured (length region) (f region))
-
 data Token = TokInt Int | TokBlank | TokSym Symbol deriving (Show, Eq, Ord)
 
 number, blank, symbol :: Parser (Measured Token)
-number = measured isDigit (TokInt . read)
-blank = measured (== '.') (const TokBlank)
+number = do
+  region <- some (psym isDigit)
+  pure (Measured (length region) . TokInt . read $ region)
+blank = Measured 1 TokBlank <$ sym '.'
 symbol = Measured 1 . TokSym . Symbol <$> psym (not . ((||) <$> (== '.') <*> isDigit))
 
 line :: Parser [Measured Token]
