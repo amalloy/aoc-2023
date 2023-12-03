@@ -63,8 +63,11 @@ collate = execWriter . traverse_ row . zip [0..]
                               pure $ Coord (x + dx) y
                   pure $ x + width
 
-part1 :: Input -> ()
-part1 = const ()
+part1 :: Input -> Int
+part1 (nums, syms) = sum . mapMaybe part . S.toList $ nums
+  where symLocs = M.keysSet syms
+        part (Located coords n) | S.null $ S.intersection symLocs (foldMap neighbors coords) = Nothing
+                                | otherwise = Just n
 
 part2 :: Input -> ()
 part2 = const ()
