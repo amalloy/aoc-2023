@@ -29,9 +29,6 @@ neighbors (Coord x y) = S.fromList $ do
   dy <- [-1..1]
   pure $ Coord (x + dx) (y + dy)
 
-neighborhood :: Foldable f => f Coord -> S.Set Coord
-neighborhood = foldMap neighbors
-
 type Parser a = RE Char a
 
 measured :: (Char -> Bool) -> (String -> a) -> Parser (Measured a)
