@@ -69,8 +69,14 @@ part1 (nums, syms) = sum . mapMaybe part . S.toList $ nums
         part (Located coords n) | S.null $ S.intersection symLocs (foldMap neighbors coords) = Nothing
                                 | otherwise = Just n
 
-part2 :: Input -> ()
-part2 = const ()
+part2 :: Input -> Int
+part2 (nums, syms) = sum . mapMaybe gearRatio . M.assocs $ syms
+  where gearRatio (loc, Symbol '*') = case filter adjacent nums' of
+          [Located _ x, Located _ y] -> Just $ x * y
+          _ -> Nothing
+          where adjacent (Located coords _) = S.member loc (foldMap neighbors coords)
+        gearRatio _ = Nothing
+        nums' = S.toList nums
 
 prepare :: String -> Input
 prepare = collate . mapMaybe (=~ line) . lines
