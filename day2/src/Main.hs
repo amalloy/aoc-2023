@@ -19,9 +19,6 @@ type Input = [Game [Pull]]
 
 type Parser a = RE Char a
 
-space :: Parser ()
-space = () <$ sym ' '
-
 sepBy :: Alternative f => f a -> f b -> f [a]
 p `sepBy` sep = (:) <$> p <*> many (sep *> p)
 
@@ -29,7 +26,7 @@ color :: Parser Color
 color = asum [c <$ string (map toLower (show c)) | c <- [minBound..maxBound]]
 
 oneColorPull :: Parser Pull
-oneColorPull = flip M.singleton <$> decimal <* space <*> color
+oneColorPull = flip M.singleton <$> decimal <* sym ' ' <*> color
 
 pull :: Parser Pull
 pull = M.unionsWith (+) <$> oneColorPull `sepBy` string ", "
