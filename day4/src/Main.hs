@@ -3,19 +3,43 @@
 
 module Main where
 
+import Control.Applicative (some)
 import Control.Arrow ((&&&))
 
-type Input = [String]
+import Data.Maybe (mapMaybe)
+import Data.Set qualified as S
 
-part1 :: Input -> ()
-part1 = const ()
+import Text.Regex.Applicative (RE, sym, string, (=~))
+import Text.Regex.Applicative.Common (decimal)
 
-part2 :: Input -> ()
-part2 = const ()
+data Numbered a = Numbered Int a deriving (Functor, Foldable, Show, Eq, Ord)
+data Card = Card {_winning, _ours :: [Int]} deriving (Show)
+
+type Input = [Numbered Card]
+
+type Parser a = RE Char a
+
+spaces :: Parser ()
+spaces = () <$ some (sym ' ')
+
+card :: Parser Card
+card = Card <$> some number <* string " |" <*> some number
+  where number = spaces *> decimal
+
+line :: Parser (Numbered Card)
+line = Numbered <$> (string "Card" *> spaces *> decimal <* sym ':') <*> card
+
+part1 :: Input -> Int
+part1 = sum . map value
+  where value (Numbered _ (Card winning got)) | S.null winners = 0
+                                              | otherwise = 2 ^ (S.size winners - 1)
+          where winners = S.intersection (S.fromList winning) (S.fromList got)
+
+part2 :: Input -> Int
+part2 = length
 
 prepare :: String -> Input
-prepare = lines
+prepare = mapMaybe (=~ line) . lines
 
 main :: IO ()
 main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
-
