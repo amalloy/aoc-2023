@@ -6,6 +6,7 @@ module Main where
 import Control.Applicative (some)
 import Control.Arrow ((&&&))
 
+import Data.IntMap.Lazy qualified as M
 import Data.Maybe (mapMaybe)
 import Data.Set qualified as S
 
@@ -36,7 +37,13 @@ part1 = sum . map value
           where winners = S.intersection (S.fromList winning) (S.fromList got)
 
 part2 :: Input -> Int
-part2 = length
+part2 cards = M.size netCards + (sum (M.elems netCards))
+  where netCards = M.fromList entries
+        entries = do
+          Numbered cardNum (Card winning got) <- cards
+          let numWinners = S.size $ S.intersection (S.fromList winning) (S.fromList got)
+          pure (cardNum, numWinners + sum [netCards M.! (cardNum + i) | i <- [1..numWinners]])
+
 
 prepare :: String -> Input
 prepare = mapMaybe (=~ line) . lines
