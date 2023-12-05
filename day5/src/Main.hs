@@ -30,9 +30,12 @@ type Parser a = RE Char a
 range :: Parser Range
 range = flip Range <$> decimal <* sym ' ' <*> decimal <* sym ' ' <*> decimal
 
+rangesToMapping :: [Range] -> Mapping
+rangesToMapping = IM.fromList . map go
+  where go r@(Range src _ _) = (src, r)
+
 mapping :: Parser Mapping
-mapping = IM.fromList . map fromRange <$> some (range <* sym '\n')
-  where fromRange r@(Range src _ _) = (src, r)
+mapping = rangesToMapping <$> some (range <* sym '\n')
 
 page :: Parser Page
 page = do
@@ -54,6 +57,33 @@ location :: Index -> Int -> Int
 location idx = go "seed"
   where go ingredient n = maybe n handle (M.lookup ingredient idx)
           where handle (Page _ to next) = go to (translate next n)
+
+explicit :: Mapping -> Mapping
+explicit = rangesToMapping . go 0
+  where go :: Int -> Mapping -> [Range]
+        go n implicit = case IM.lookupLE n implicit of
+          Nothing -> case IM.lookupGT n implicit of
+            Nothing -> pure $ Range n n (maxBound - n + 1)
+            Just (_, Range from _ _) -> Range n n (from - n) : go from implicit
+          Just (_, r@(Range from _ len)) -> r : go (from + len) (IM.delete from implicit)
+
+compose :: Mapping -> Mapping -> Mapping
+compose f g = rangesToMapping (ranges 0)
+  where ranges n | n < 0 = []
+                 | otherwise = case IM.lookupLE n f of
+                     Nothing -> error $ "Can't find " <> show n <> " in " <> show f
+                     Just (_, Range src dst len) -> let offset = n - src
+                                                        odst = dst + offset
+                                                        olen = len - offset
+                                                    in case IM.lookupLE odst g of
+                                                         Nothing -> error $ "Can't find " <> show odst <> "' in " <> show g
+                                                         Just (_, Range src' dst' len') ->
+                                                           let offset' = odst - src'
+                                                               odst' = dst' + offset'
+                                                               olen' = len' - offset'
+                                                               shortest = min olen olen'
+                                                           in Range n odst' shortest : ranges (n + shortest)
+
 
 type Input = Almanac
 
