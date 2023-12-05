@@ -90,8 +90,27 @@ type Input = Almanac
 part1 :: Input -> Int
 part1 (Almanac seeds idx) = minimum . map (location idx) $ seeds
 
-part2 :: Input -> ()
-part2 = const ()
+part2 :: Input -> Int
+part2 (Almanac seeds idx) = minimum $ go (pairs seeds)
+  where pairs [] = []
+        pairs (x:y:xs) = (x, y) : pairs xs
+        pairs _ = error "Odd number of items"
+        go :: [(Int, Int)] -> [Int]
+        go [] = []
+        go ((start, len) : xs) = case IM.lookupLE start m of
+          Nothing -> error (show start)
+          Just (_, (Range src dst len')) -> let offset = start - src
+                                                dst' = dst + offset
+                                                shortest = min len (len' - offset)
+                                            in dst' : if len == shortest
+            then go xs
+            else go ((start + shortest, len - shortest) : xs)
+        m = collapse start
+          where (Page from to f) = idx M.! "seed"
+                start = Page from to (explicit f)
+        collapse (Page from to f) = case M.lookup to idx of
+                                      Nothing -> f
+                                      Just (Page _ to' g) -> collapse (Page from to' (compose f (explicit g)))
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ almanac)
