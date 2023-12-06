@@ -9,10 +9,10 @@ import Data.Maybe (fromMaybe)
 import Text.Regex.Applicative (RE, string, some, sym, (=~))
 import Text.Regex.Applicative.Common (decimal)
 
-newtype Millisecond = Ms Int deriving Show
-newtype Millimeter = Mm Int deriving Show
+newtype Millisecond = Ms {getMs :: Int} deriving Show
+newtype Millimeter = Mm {getMm :: Int} deriving Show
 
-data Record = Record Millisecond Millimeter deriving Show
+data Record = Record {time :: Millisecond, distance :: Millimeter} deriving Show
 
 type Input = [Record]
 
