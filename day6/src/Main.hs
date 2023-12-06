@@ -31,8 +31,12 @@ waysToBeatRecord (Record (Ms ms) (Mm mm)) =
 part1 :: Input -> Int
 part1 = product . map waysToBeatRecord
 
-part2 :: Input -> ()
-part2 = const ()
+part2 :: Input -> Int
+part2 records = waysToBeatRecord record
+  where record = Record (Ms (kern times)) (Mm (kern distances))
+        times = map (getMs . time) records
+        distances = map (getMm . distance) records
+        kern = read . (>>= show)
 
 prepare :: String -> Input
 prepare = fromMaybe (error "No parse") . (=~ input)
