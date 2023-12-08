@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Arrow ((&&&))
+import Data.List (isSuffixOf)
 import Data.Maybe (fromMaybe)
 
 import Text.Regex.Applicative (RE, (=~), string, psym, sym, some, (<|>))
@@ -37,15 +38,26 @@ data Input = Input [Direction] Atlas deriving Show
 input :: Parser Input
 input = Input <$> some direction <* string "\n\n" <*> (M.fromList <$> some (line <* sym '\n'))
 
-part1 :: Input -> Int
-part1 (Input dirs m) = length . takeWhile (/= Node "ZZZ") . scanl go (Node "AAA") $ cycle dirs
+walk :: Node -> Input -> [Node]
+walk start (Input dirs m) = scanl go start $ cycle dirs
   where go loc dir = let Choice l r = m M.! loc
                      in case dir of
                           L -> l
                           R -> r
 
-part2 :: Input -> ()
-part2 = const ()
+part1 :: Input -> Int
+part1 = length . takeWhile (/= Node "ZZZ") . walk (Node "AAA")
+
+data Constraint = Constraint {modulus, remainder :: Integer} deriving Show
+
+part2 :: Input -> Integer
+part2 i@(Input _ m) = let starts = filter (endsWith "A") . M.keys $ m
+                      in (foldr lcm 1) . map (modulus . constraint) $ starts
+  where endsWith s (Node n) = s `isSuffixOf` n
+        constraint start = let steps = walk start i
+                               (prefix, goal:rest) = break (endsWith "Z") steps
+                               (loop, _) = break (endsWith "Z") rest
+                           in Constraint (fromIntegral (length loop) + 1) (fromIntegral (length prefix))
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ input)
