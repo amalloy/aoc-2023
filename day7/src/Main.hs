@@ -1,7 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Main where
+
+import GHC.Generics (Generic1, Generically1(..))
 
 import Control.Arrow ((&&&))
 import Data.Foldable (toList)
@@ -14,7 +17,7 @@ import Text.Regex.Applicative (RE, sym, (=~), asum)
 import Text.Regex.Applicative.Common (decimal)
 
 data Value = Two | Three | Four | Five | Six | Seven | Eight | Nine | Ten | Jack | Queen | King | Ace
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
 newtype JokerJack = JokerJack Value deriving (Show, Eq)
 instance Ord JokerJack where
@@ -22,7 +25,10 @@ instance Ord JokerJack where
   JokerJack _ <= JokerJack Jack = False
   JokerJack a <= JokerJack b = a <= b
 
-data Hand a = Hand a a a a a deriving (Functor, Foldable, Traversable, Show, Eq, Ord)
+data Hand a = Hand a a a a a
+  deriving (Functor, Foldable, Traversable, Show, Eq, Ord, Generic1)
+  deriving Applicative via Generically1 Hand
+
 data Kind = HighCard
           | OnePair
           | TwoPair
@@ -36,13 +42,10 @@ data Game a = Game (Hand a) Int deriving (Show, Functor)
 type Parser a = RE Char a
 
 value :: Parser Value
-value = asum [ Two <$ sym '2', Three <$ sym '3', Four <$ sym '4', Five <$ sym '5'
-             , Six <$ sym '6', Seven <$ sym '7', Eight <$ sym '8', Nine <$ sym '9'
-             , Ten <$ sym 'T', Jack <$ sym 'J', Queen <$ sym 'Q', King <$ sym 'K', Ace <$ sym 'A'
-             ]
+value = asum . zipWith (\val label -> val <$ sym label) [Two ..] $ "23456789TJQKA"
 
 hand :: Parser (Hand Value)
-hand = Hand <$> value <*> value <*> value <*> value <*> value
+hand = sequenceA $ pure value
 
 game :: Parser (Game Value)
 game = Game <$> (hand <* sym ' ') <*> decimal
