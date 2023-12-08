@@ -48,16 +48,10 @@ walk start (Input dirs m) = scanl go start $ cycle dirs
 part1 :: Input -> Int
 part1 = length . takeWhile (/= Node "ZZZ") . walk (Node "AAA")
 
-data Constraint = Constraint {modulus, remainder :: Integer} deriving Show
-
-part2 :: Input -> Integer
+part2 :: Input -> Int
 part2 i@(Input _ m) = let starts = filter (endsWith "A") . M.keys $ m
-                      in (foldr lcm 1) . map (modulus . constraint) $ starts
+                      in (foldr lcm 1) . map (length . takeWhile (not . endsWith "Z") . flip walk i) $ starts
   where endsWith s (Node n) = s `isSuffixOf` n
-        constraint start = let steps = walk start i
-                               (prefix, goal:rest) = break (endsWith "Z") steps
-                               (loop, _) = break (endsWith "Z") rest
-                           in Constraint (fromIntegral (length loop) + 1) (fromIntegral (length prefix))
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ input)
