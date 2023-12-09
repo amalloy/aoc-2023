@@ -3,10 +3,10 @@
 
 module Main where
 
-import Prelude hiding (repeat, last)
+import Prelude hiding (repeat, last, init)
 
 import Control.Arrow ((&&&))
-import Data.List.NonEmpty (NonEmpty(..), repeat, toList, last)
+import Data.List.NonEmpty (NonEmpty(..), repeat, toList, last, init, fromList)
 import Data.Maybe (mapMaybe)
 
 import Text.Regex.Applicative (sym, (=~), some)
@@ -19,9 +19,7 @@ solve :: [Int] -> [[Int]]
 solve = takeWhile (any (/= 0)) . iterate distill
 
 extrapolate :: (NonEmpty Int -> NonEmpty Int -> NonEmpty Int) -> [[Int]] -> Int
-extrapolate f = last . foldr f (repeat 0) . map toNonEmpty
-  where toNonEmpty [] = error "Math is broken"
-        toNonEmpty (x:xs) = x :| xs
+extrapolate f = last . foldr f (repeat 0) . map fromList
 
 type Input = [[Int]]
 
