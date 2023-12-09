@@ -3,10 +3,9 @@
 
 module Main where
 
-import Prelude hiding (repeat, last, init)
-
 import Control.Arrow ((&&&))
-import Data.List.NonEmpty (NonEmpty(..), repeat, toList, last, init, fromList)
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty qualified as NE
 import Data.Maybe (mapMaybe)
 
 import Text.Regex.Applicative (sym, (=~), some)
@@ -18,17 +17,20 @@ distill = zipWith subtract <*> tail
 solve :: [Int] -> [[Int]]
 solve = takeWhile (any (/= 0)) . iterate distill
 
-extrapolate :: (NonEmpty Int -> NonEmpty Int -> NonEmpty Int) -> [[Int]] -> Int
-extrapolate f = last . foldr f (repeat 0) . map fromList
+extrapolate :: (NonEmpty Int -> NonEmpty Int -> NonEmpty Int) -> [[Int]] -> NonEmpty Int
+extrapolate f xs = foldr f zeroes lists
+  where zeroes = NE.zipWith const (NE.repeat 0) (last lists)
+        lists = map NE.fromList xs
 
 type Input = [[Int]]
 
 part1 :: Input -> Int
-part1 = sum . map (extrapolate combine . solve)
-  where combine (x :| xs) ys = x :| zipWith (+) xs (toList ys)
+part1 = sum . map (NE.last . extrapolate combine . solve)
+  where combine xs ys = NE.scanl (+) (NE.head xs) ys
 
-part2 :: Input -> ()
-part2 = const ()
+part2 :: Input -> Int
+part2 = sum . map (NE.head . extrapolate combine . solve)
+  where combine xs ys = NE.scanr subtract (NE.last xs) ys
 
 prepare :: String -> Input
 prepare = mapMaybe (=~ input) . lines
