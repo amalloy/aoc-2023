@@ -4,18 +4,34 @@
 module Main where
 
 import Control.Arrow ((&&&))
+import Data.Maybe (mapMaybe)
 
-type Input = [String]
+import Text.Regex.Applicative (sym, (=~), some)
+import Text.Regex.Applicative.Common (signed, decimal)
 
-part1 :: Input -> ()
-part1 = const ()
+distill :: [Int] -> [Int]
+distill = zipWith subtract <*> tail
+
+solve :: [Int] -> [[Int]]
+solve = takeWhile (any (/= 0)) . iterate distill
+
+extrapolate :: [[Int]] -> Int
+extrapolate = last . foldr combine (repeat 0)
+  where combine [] _ = error "Math is broken"
+        combine xs@(x:_) ys = x : zipWith (+) xs ys
+
+type Input = [[Int]]
+
+part1 :: Input -> Int
+part1 = sum . map (extrapolate . solve)
 
 part2 :: Input -> ()
 part2 = const ()
 
 prepare :: String -> Input
-prepare = lines
+prepare = mapMaybe (=~ input) . lines
+  where input = signed decimal `sepBy` sym ' '
+        a `sepBy` b = (:) <$> a <*> some (b *> a)
 
 main :: IO ()
 main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
-
