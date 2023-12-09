@@ -3,7 +3,10 @@
 
 module Main where
 
+import Prelude hiding (repeat, last)
+
 import Control.Arrow ((&&&))
+import Data.List.NonEmpty (NonEmpty(..), repeat, toList, last)
 import Data.Maybe (mapMaybe)
 
 import Text.Regex.Applicative (sym, (=~), some)
@@ -15,15 +18,16 @@ distill = zipWith subtract <*> tail
 solve :: [Int] -> [[Int]]
 solve = takeWhile (any (/= 0)) . iterate distill
 
-extrapolate :: [[Int]] -> Int
-extrapolate = last . foldr combine (repeat 0)
-  where combine [] _ = error "Math is broken"
-        combine xs@(x:_) ys = x : zipWith (+) xs ys
+extrapolate :: (NonEmpty Int -> NonEmpty Int -> NonEmpty Int) -> [[Int]] -> Int
+extrapolate f = last . foldr f (repeat 0) . map toNonEmpty
+  where toNonEmpty [] = error "Math is broken"
+        toNonEmpty (x:xs) = x :| xs
 
 type Input = [[Int]]
 
 part1 :: Input -> Int
-part1 = sum . map (extrapolate . solve)
+part1 = sum . map (extrapolate combine . solve)
+  where combine (x :| xs) ys = x :| zipWith (+) xs (toList ys)
 
 part2 :: Input -> ()
 part2 = const ()
