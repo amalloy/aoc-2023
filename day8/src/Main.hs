@@ -49,8 +49,9 @@ part1 :: Input -> Int
 part1 = length . takeWhile (/= Node "ZZZ") . walk (Node "AAA")
 
 part2 :: Input -> Int
-part2 i@(Input _ m) = let starts = filter (endsWith "A") . M.keys $ m
-                      in (foldr lcm 1) . map (length . takeWhile (not . endsWith "Z") . flip walk i) $ starts
+part2 i@(Input _ m) =
+  foldr lcm 1 . map (length . takeWhile (not . endsWith "Z") . flip walk i)
+  . filter (endsWith "A") . M.keys $ m
   where endsWith s (Node n) = s `isSuffixOf` n
 
 prepare :: String -> Input
