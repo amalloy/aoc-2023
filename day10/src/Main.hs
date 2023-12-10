@@ -60,8 +60,18 @@ transit = connect . endpoints
 
 type Input = (Coord, M.Map Coord Feature)
 
-part1 :: Input -> ()
-part1 = const ()
+part1 :: Input -> Int
+part1 (origin, grid) = let Pipe p = grid M.! origin
+                           (i, j) = endpoints p
+                       in succ . length . takeWhile (notAllSame . map snd) . tail .
+                          iterate (map rayTrace) $ [(i, origin), (j, origin)]
+  where notAllSame (x:xs) = not (all (== x) xs)
+        notAllSame [] = error "No rays"
+        rayTrace (dir, c) = (dir', c')
+          where dir' = case grid M.! c' of
+                         Pipe p -> transit p dir
+                         _ -> dir
+                c' = unit dir <> c
 
 part2 :: Input -> ()
 part2 = const ()
