@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Arrow ((&&&))
+import Data.List (mapAccumL)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
@@ -81,8 +82,24 @@ perimeter (origin, grid) = loopCoords
 part1 :: Input -> Int
 part1 = (`div` 2) . S.size . perimeter
 
-part2 :: Input -> ()
-part2 = const ()
+enclosed :: M.Map Coord Feature -> Int -> Int -> Int
+enclosed grid maxX y = length . filter id . snd . mapAccumL go (False, False) $ row
+  where row = [grid M.! Coord y x | x <- [0..maxX]]
+        go par@(norths, souths) f = case f of
+          Pipe p -> ((norths /= has North, souths /= has South), False)
+            where has d = a == d || b == d
+                  (a, b) = endpoints p
+          _ -> (par, bothOdd par)
+        bothOdd (True, True) = True
+        bothOdd _ = False
+
+part2 :: Input -> Int
+part2 input@(_, grid) = let loop = perimeter input
+                            grid' = M.mapWithKey onlyLoop grid
+                            onlyLoop k x | S.member k loop = x
+                                         | otherwise = Empty
+                            (Coord maxY maxX, _) = M.findMax grid'
+                        in sum . map (enclosed grid' maxX) $ [0..maxY]
 
 prepare :: String -> Input
 prepare = orient . map (map feature) . lines
