@@ -8,6 +8,7 @@ import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
 import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 
 data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum)
 data Pipe = Horiz | Vert | F | J | L | Seven deriving (Show, Enum)
@@ -60,18 +61,23 @@ transit = connect . endpoints
 
 type Input = (Coord, M.Map Coord Feature)
 
+rayTrace :: M.Map Coord Feature
+         -> (Direction, Coord) -> (Direction, Coord)
+rayTrace grid (dir, c) = (dir', c')
+  where dir' = case grid M.! c' of
+                 Pipe p -> transit p dir
+                 _ -> dir
+        c' = unit dir <> c
+
+perimeter :: Input -> S.Set Coord
+perimeter (origin, grid) = loopCoords
+  where loopCoords = S.fromList . (origin :) . takeWhile (/= origin)
+                     . map snd . tail . iterate (rayTrace grid) $ (i, origin)
+        (i, _) = endpoints p
+        Pipe p = grid M.! origin
+
 part1 :: Input -> Int
-part1 (origin, grid) = let Pipe p = grid M.! origin
-                           (i, j) = endpoints p
-                       in succ . length . takeWhile (notAllSame . map snd) . tail .
-                          iterate (map rayTrace) $ [(i, origin), (j, origin)]
-  where notAllSame (x:xs) = not (all (== x) xs)
-        notAllSame [] = error "No rays"
-        rayTrace (dir, c) = (dir', c')
-          where dir' = case grid M.! c' of
-                         Pipe p -> transit p dir
-                         _ -> dir
-                c' = unit dir <> c
+part1 = (`div` 2) . S.size . perimeter
 
 part2 :: Input -> ()
 part2 = const ()
