@@ -74,7 +74,9 @@ perimeter (origin, grid) = loopCoords
   where loopCoords = S.fromList . (origin :) . takeWhile (/= origin)
                      . map snd . tail . iterate (rayTrace grid) $ (i, origin)
         (i, _) = endpoints p
-        Pipe p = grid M.! origin
+        p = case grid M.! origin of
+          Pipe pipe -> pipe
+          x -> error $ "Surprised by " <> show x
 
 part1 :: Input -> Int
 part1 = (`div` 2) . S.size . perimeter
