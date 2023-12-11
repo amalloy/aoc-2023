@@ -89,9 +89,7 @@ enclosed grid maxX y = length . filter id . snd . mapAccumL go (False, False) $ 
           Pipe p -> ((norths /= has North, souths /= has South), False)
             where has d = a == d || b == d
                   (a, b) = endpoints p
-          _ -> (par, bothOdd par)
-        bothOdd (True, True) = True
-        bothOdd _ = False
+          _ -> (par, uncurry (&&) par)
 
 part2 :: Input -> Int
 part2 input@(_, grid) = let loop = perimeter input
