@@ -35,7 +35,7 @@ part2 = sum . map (possibilities . unfold)
                     where skip = subproblems M.! (a + 1, b)
                           use = case ys of
                             [] -> 0
-                            (y:_) -> let expected = replicate (y - 1) '#' <> pure '.'
+                            (y:_) -> let expected = replicate (y - 1) '#' <> "."
                                          prefix = take y xs
                                          match p '?' = p
                                          match _ q = q
