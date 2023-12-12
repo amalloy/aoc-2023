@@ -2,17 +2,20 @@ module Main where
 
 import Control.Arrow ((&&&))
 import Data.List (intercalate)
-import Data.Map.Lazy qualified as M
+import Data.Array.IArray as A
 
 type Input = [(String, [Int])]
 
 possibilities :: (String, [Int]) -> Int
-possibilities (s, lab) = subproblems M.! (0, 0)
+possibilities (s, lab) = subproblems A.! (0, 0)
   where s' = s <> "."
-        subproblems = M.fromList $ do
-          a <- [0..length s']
-          b <- [0..length lab]
-          pure ((a, b), subproblem a b)
+        subproblems :: A.Array (Int, Int) Int
+        subproblems = A.array ((0, 0), (h, w)) $ do
+          y <- [0..h]
+          x <- [0..w]
+          pure ((y, x), subproblem y x)
+          where h = length s'
+                w = length lab
         subproblem a b = case (drop a s', drop b lab) of
           ([], []) -> 1
           ([], (_:_)) -> 0
@@ -21,7 +24,7 @@ possibilities (s, lab) = subproblems M.! (0, 0)
             '#' -> use
             '?' -> skip + use
             c -> error $ "Unexpected " <> show c
-            where skip = subproblems M.! (a + 1, b)
+            where skip = subproblems A.! (a + 1, b)
                   use = case ys of
                     [] -> 0
                     (y:_) -> let expected = replicate (y - 1) '#' <> "."
@@ -30,7 +33,7 @@ possibilities (s, lab) = subproblems M.! (0, 0)
                                  match _ q = q
                                  actual = zipWith match expected prefix
                              in if actual == expected
-                                then subproblems M.! (a + y + 1, b + 1)
+                                then subproblems A.! (a + y + 1, b + 1)
                                 else 0
 
 part1 :: Input -> Int
