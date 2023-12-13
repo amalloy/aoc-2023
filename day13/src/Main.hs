@@ -22,8 +22,8 @@ axisOfSymmetry wantedErrors xss = head $ do
                                    below = map snd counterparts
                                guard . (== wantedErrors) $ errors above below
                                [Just i]
-                                 where errors as bs = sum $ zipWith rowErrors as bs
-                                       rowErrors as bs = length . filter not $ zipWith (==) as bs
+                                 where errors = (sum .) . zipWith rowErrors
+                                       rowErrors = ((length . filter not) .) . zipWith (==)
     _ -> [Nothing]
 
 
