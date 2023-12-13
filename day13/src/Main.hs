@@ -13,30 +13,37 @@ type Parser a = RE Char a
 
 data Feature = Ash | Rocks deriving (Show, Eq, Ord, Enum)
 
-axisOfSymmetry :: Eq a => [a] -> Maybe Int
-axisOfSymmetry xss = head $ do
+axisOfSymmetry :: Eq a => Int -> [[a]] -> Maybe Int
+axisOfSymmetry wantedErrors xss = head $ do
   i <- [1..]
   case splitAt i xss of
     (xs@(_:_), ys@(_:_)) -> do let counterparts = zip (reverse xs) ys
                                    above = map fst counterparts
                                    below = map snd counterparts
-                               guard $ all id (zipWith (==) above below)
+                               guard . (== wantedErrors) $ errors above below
                                [Just i]
+                                 where errors as bs = sum $ zipWith rowErrors as bs
+                                       rowErrors as bs = length . filter not $ zipWith (==) as bs
     _ -> [Nothing]
+
 
 type Pattern = [[Feature]]
 type Input = [Pattern]
 
-part1 :: Input -> Int
-part1 pats = let results = map go pats
-                 failures = filter ((== Nothing) . snd) . zip [0..] $ results
-             in case failures of
-                  [] -> sum . mapMaybe id $ results
-                  ((i, _):_) -> error $ "Couldn't solve " <> show (i :: Int)
-  where go pat = fmap (100 *) (axisOfSymmetry pat) <|> axisOfSymmetry (transpose pat)
+solve :: Int -> Input -> Int
+solve smudges pats = let results = map go pats
+                         failures = filter ((== Nothing) . snd) . zip [0..] $ results
+                     in case failures of
+                          [] -> sum . mapMaybe id $ results
+                          ((i, _):_) -> error $ "Couldn't solve " <> show (i :: Int)
+  where go pat = fmap (100 *) (match pat) <|> match (transpose pat)
+        match = axisOfSymmetry smudges
 
-part2 :: Input -> ()
-part2 = const ()
+part1 :: Input -> Int
+part1 = solve 0
+
+part2 :: Input -> Int
+part2 = solve 1
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ input)
