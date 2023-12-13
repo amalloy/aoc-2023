@@ -22,10 +22,10 @@ axisOfSymmetry wantedErrors xss = head $ do
                                    below = map snd counterparts
                                guard . (== wantedErrors) $ errors above below
                                [Just i]
-                                 where errors = (sum .) . zipWith rowErrors
-                                       rowErrors = ((length . filter not) .) . zipWith (==)
+                                 where errors = sum .: zipWith rowErrors
+                                       rowErrors = (length . filter not) .: zipWith (==)
+                                       (.:) = (.) . (.)
     _ -> [Nothing]
-
 
 type Pattern = [[Feature]]
 type Input = [Pattern]
