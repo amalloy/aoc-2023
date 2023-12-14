@@ -22,6 +22,7 @@ executable day14
               -Wredundant-constraints
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , array
                      , parsec
                      , regex-applicative
                      , recursion-schemes
@@ -29,4 +30,3 @@ executable day14
                      , mtl
                      , transformers
                      , QuickCheck
-
