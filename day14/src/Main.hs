@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingVia, LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE DerivingVia, LambdaCase #-}
 
 module Main where
 
@@ -115,7 +115,7 @@ part2 fs = runST $ do
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ input)
-  where input = some (row <* "\n")
+  where input = some (row <* sym '\n')
         row = some feature
         feature = asum [f <$ sym s | (f, s) <- zip [Empty, Wall, Boulder] ".#O"]
 
