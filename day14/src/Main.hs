@@ -5,12 +5,15 @@ module Main where
 import Control.Applicative (liftA2)
 import Control.Arrow ((&&&))
 import Control.Monad.ST (ST, runST)
+import Control.Monad (replicateM_)
 
 import Data.Array.ST (STArray)
 import Data.Array.MArray (newListArray, readArray, writeArray, getBounds, getAssocs, Ix(..))
 import Data.Foldable (for_)
 import Data.Maybe (fromMaybe)
 import Data.Traversable (for)
+
+import Data.Map.Strict qualified as M
 
 import Text.Regex.Applicative ((=~), some, asum, sym)
 
@@ -27,7 +30,7 @@ scan :: Direction -> Scan
 scan d = case d of
   North -> Scan (by (Coord (-1) 0)) origin east
   South -> Scan (by (Coord 1 0)) (liftA2 (*) (Coord 1 0)) east
-  East -> Scan (by (Coord 0 1)) (liftA2 (*) (Coord 1 0)) south
+  East -> Scan (by (Coord 0 1)) (liftA2 (*) (Coord 0 1)) south
   West -> Scan (by (Coord 0 (-1))) origin south
   where by o = liftA2 (+) (fmap negate o)
         origin _ = Coord 0 0
@@ -84,8 +87,31 @@ part1 fs = runST $ do
   roll North g
   sum . map load <$> getAssocs g
 
-part2 :: Input -> ()
-part2 = const ()
+spinCycle :: Int -> Grid s -> ST s ()
+spinCycle times g = loop 0 M.empty
+  where loop cycleNum prevs | cycleNum == times = pure ()
+                            | otherwise = do
+                                state <- getAssocs g
+                                case M.alterF (insert cycleNum) state prevs of
+                                  Left lastSeen -> do
+                                    let cycleLength = cycleNum - lastSeen
+                                        leftover = (times - cycleNum) `mod` cycleLength
+                                    replicateM_ leftover spin
+                                  Right prevs' -> do
+                                    spin
+                                    loop (cycleNum + 1) prevs'
+        insert n Nothing = Right (Just n)
+        insert _n (Just p) = Left p
+        spin = roll North g *> roll West g *> roll South g *> roll East g
+
+part2 :: Input -> Int
+part2 fs = runST $ do
+  g <- toArray fs
+  (_, Coord maxY _) <- getBounds g
+  let load ((Coord y _), Boulder) = maxY - y + 1
+      load _ = 0
+  spinCycle 1000000000 g
+  sum . map load <$> getAssocs g
 
 prepare :: String -> Input
 prepare = fromMaybe (error "no parse") . (=~ input)
@@ -96,11 +122,11 @@ prepare = fromMaybe (error "no parse") . (=~ input)
 debug :: Input -> String
 debug fs = runST $ do
   g <- toArray fs
-  roll North g
+  spinCycle 2 g
   unlines <$> showGrid g
 
 main :: IO ()
 main = do
   i <- prepare <$> readFile "input.txt"
   print . (part1 &&& part2) $ i
-  -- putStr (debug i)
+  putStr =<< debug . prepare <$> readFile "input.test"
