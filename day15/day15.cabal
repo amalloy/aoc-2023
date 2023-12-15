@@ -22,6 +22,7 @@ executable day15
               -Wredundant-constraints
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , array
                      , split
                      , parsec
                      , regex-applicative
