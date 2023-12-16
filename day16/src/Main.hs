@@ -1,32 +1,29 @@
 {-# LANGUAGE DerivingVia #-}
+
 module Main where
+
+import GHC.Generics (Generic1, Generically1(..))
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((&&&))
 
-import Data.Array.IArray qualified as A
 import Data.Bits (xor)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Foldable (toList)
 import Data.Ix (Ix, inRange)
 import Data.Maybe (fromMaybe)
 
+import Data.Array.IArray qualified as A
 import Data.Set qualified as S
 
 import Text.Regex.Applicative ((=~), (<|>), some, sym)
 
-import GHC.Generics (Generic1, Generically1(..))
-
-data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum)
-
 data Coord a = Coord {_y, _x :: a} deriving (Show, Eq, Ord, Ix, Generic1, Functor)
   deriving Applicative via Generically1 Coord
+data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum)
+data Trace = Trace {_coord :: Coord Int, _dir :: Direction} deriving (Show, Eq, Ord)
 
 data Some a = One a | Two a a deriving (Show, Functor, Foldable, Traversable)
-
 data Feature = Empty | Mirror (Direction -> Direction) | Splitter (Direction -> Some Direction)
-
-data Trace = Trace {_coord :: Coord Int, _dir :: Direction} deriving (Show, Eq, Ord)
 
 unit :: Direction -> Coord Int
 unit North = Coord (-1) 0
@@ -39,21 +36,16 @@ nexts Empty = One
 nexts (Mirror m) = One . m
 nexts (Splitter s) = s
 
+type Input = A.Array (Coord Int) Feature
+
 step :: Input -> Trace -> Some Trace
 step g (Trace c d) = fmap go $ nexts (g A.! c) d
   where go d' = Trace (liftA2 (+) c (unit d')) d'
 
 stepAll :: Input -> [Trace] -> [Trace]
-stepAll g = nubOrd . filter inBounds . (>>= (toList . step g))
+stepAll g = filter inBounds . (>>= (toList . step g))
   where inBounds (Trace c _) = inRange r c
         r = A.bounds g
-
-runTillRepeat :: Ord a => (a -> a) -> a -> [a]
-runTillRepeat next = go S.empty
-  where go seen x | x `S.member` seen = []
-                  | otherwise = x : go (S.insert x seen) (next x)
-
-type Input = A.Array (Coord Int) Feature
 
 energizedBy :: Input -> Trace -> Int
 energizedBy g = S.size . S.map _coord . go S.empty . pure
