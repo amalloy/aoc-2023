@@ -26,7 +26,7 @@ data Some a = One a | Two a a deriving (Show, Functor, Foldable, Traversable)
 
 data Feature = Empty | Mirror (Direction -> Direction) | Splitter (Direction -> Some Direction)
 
-data Trace = Trace (Coord Int) Direction deriving (Show, Eq, Ord)
+data Trace = Trace {_coord :: Coord Int, _dir :: Direction} deriving (Show, Eq, Ord)
 
 unit :: Direction -> Coord Int
 unit North = Coord (-1) 0
@@ -55,13 +55,23 @@ runTillRepeat next = go S.empty
 
 type Input = A.Array (Coord Int) Feature
 
-part1 :: Input -> Int
-part1 g = S.size . foldMap actives . runTillRepeat (stepAll g) $ [Trace (Coord 0 0) East]
-  where actives traces = S.fromList . map coord $ traces
-          where coord (Trace c _) = c
+energizedBy :: Input -> Trace -> Int
+energizedBy g = S.size . S.map _coord . go S.empty . pure
+  where go seen ts = case filter (not . flip S.member seen) ts of
+          [] -> seen
+          xs -> go (S.union seen (S.fromList xs)) (stepAll g xs)
 
-part2 :: Input -> ()
-part2 = const ()
+part1 :: Input -> Int
+part1 g = energizedBy g (Trace (Coord 0 0) East)
+
+part2 :: Input -> Int
+part2 g = maximum . map (energizedBy g) $ starts
+  where starts = concat [ [ Trace (Coord y 0) East | y <- [0..maxY]]
+                        , [ Trace (Coord y maxX) West | y <- [0..maxY]]
+                        , [ Trace (Coord 0 x) South | x <- [0..maxX]]
+                        , [ Trace (Coord maxY x) North | x <- [0..maxX]]
+                        ]
+        (_, Coord maxY maxX) = A.bounds g
 
 prepare :: String -> Input
 prepare s = mkArray . fromMaybe (error "no parse") . (=~ input) $ s
