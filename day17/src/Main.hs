@@ -17,44 +17,42 @@ import Data.Array.IArray qualified as A
 type Cost = Int
 type Grid = A.Array (V2 Int) Cost
 
-data Node = Node {_pos, _dir :: V2 Int, _momentum :: Int} deriving (Show, Eq, Ord)
+data Node = Node {_pos, _dir :: V2 Int} deriving (Show, Eq, Ord)
 data Wobbliness = Wobbliness {_minMomentum, _maxMomentum :: Int}
 
 neighbors :: Wobbliness -> Node -> [Node]
-neighbors (Wobbliness lo _) (Node p d m) | m < lo && d /= 0 = go d
-                                         | otherwise = do
+neighbors (Wobbliness lo hi) (Node p d) = do
   d' <- [negate, id] <*> basis
-  guard $ d' /= negate d
-  go d'
-  where go d' = pure $ Node (p + d') d' (if d == d' then (m + 1) else 1)
+  guard $ d' `notElem` [d, negate d]
+  len <- [lo..hi]
+  pure $ Node (p + (pure len * d')) d'
 
 cost :: Grid -> Node -> Node -> Cost
-cost g _ dest = g A.! _pos dest
+cost g (Node from _) (Node to _) = sum . map (g A.!) $ enteredCells
+  where enteredCells = takeWhile (/= from) . iterate (subtract delta) $ to
+        delta = signum (to - from)
 
 aStarHeuristic :: Grid -> Node -> Cost
 aStarHeuristic g = go
   where go n = sum $ goal - _pos n
         (_, goal) = A.bounds g
 
-illegal :: Wobbliness -> Grid -> Node -> Bool
-illegal (Wobbliness _ hi) g = go
-  where outOfBounds = not . A.inRange (A.bounds g)
-        go (Node pos _ m) = outOfBounds pos || m > hi
+illegal :: Grid -> Node -> Bool
+illegal g = outOfBounds
+  where outOfBounds = not . A.inRange (A.bounds g) . _pos
 
-solved :: Wobbliness -> Grid -> Node -> Bool
-solved (Wobbliness lo _) g = go
-  where (_, goal) = A.bounds g
-        go (Node p _ m) = m >= lo && p == goal
+solved ::  Grid -> Node -> Bool
+solved g = (== snd (A.bounds g)) . _pos
 
 type Input = Grid
 
 solve :: Wobbliness -> Input -> Maybe Int
-solve w g = fmap fst . aStar nexts (cost g) (aStarHeuristic g) (solved w g) $ start
-  where nexts = (neighbors w) `pruning` (illegal w g)
-        start = Node (V2 1 1) (V2 0 0) 0
+solve w g = fmap fst . aStar nexts (cost g) (aStarHeuristic g) (solved g) $ start
+  where nexts = (neighbors w) `pruning` (illegal g)
+        start = Node (V2 1 1) (V2 0 0)
 
 part1 :: Input -> Maybe Int
-part1 = solve (Wobbliness 0 3)
+part1 = solve (Wobbliness 1 3)
 
 part2 :: Input -> Maybe Int
 part2 = solve (Wobbliness 4 10)
