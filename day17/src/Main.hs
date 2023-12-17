@@ -6,8 +6,8 @@ import Control.Arrow ((&&&))
 import Control.Monad (guard)
 import Data.Maybe (fromMaybe)
 
-import Linear.Vector (unit, negated)
-import Linear.V2 (V2(..), _x, _y)
+import Linear.Vector (basis)
+import Linear.V2 (V2(..))
 
 import Text.Regex.Applicative ((=~), some)
 import Text.Regex.Applicative.Common (digit)
@@ -23,8 +23,8 @@ data Wobbliness = Wobbliness {_minMomentum, _maxMomentum :: Int}
 neighbors :: Wobbliness -> Node -> [Node]
 neighbors (Wobbliness lo _) (Node p d m) | m < lo && d /= 0 = go d
                                          | otherwise = do
-  d' <- [unit _x, unit _y, negated $ unit _x, negated $ unit _y]
-  guard $ d' /= negated d
+  d' <- [negate, id] <*> basis
+  guard $ d' /= negate d
   go d'
   where go d' = pure $ Node (p + d') d' (if d == d' then (m + 1) else 1)
 
@@ -38,8 +38,8 @@ aStarHeuristic g = go
 
 illegal :: Wobbliness -> Grid -> Node -> Bool
 illegal (Wobbliness _ hi) g = go
-  where b = A.bounds g
-        go (Node pos _ m) = (not $ A.inRange b pos) || m > hi
+  where outOfBounds = not . A.inRange (A.bounds g)
+        go (Node pos _ m) = outOfBounds pos || m > hi
 
 solved :: Wobbliness -> Grid -> Node -> Bool
 solved (Wobbliness lo _) g = go
