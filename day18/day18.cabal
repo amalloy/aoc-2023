@@ -23,10 +23,10 @@ executable day18
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , parsec
+                     , linear
                      , regex-applicative
                      , recursion-schemes
                      , lens
                      , mtl
                      , transformers
                      , QuickCheck
-
