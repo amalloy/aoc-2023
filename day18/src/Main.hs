@@ -29,6 +29,7 @@ includedPoints vs = interior + boundary
   where interior = area - (boundary `div` 2) + 1
         area = polynomialArea vs
         boundary = sum . (zipWith distance <*> tail) $ vs
+        -- Assumes that all lines are either horizontal or vertical
         distance c1 c2 = abs . sum $ (c2 - c1)
 
 vertices :: [Segment] -> [V2 Int]
