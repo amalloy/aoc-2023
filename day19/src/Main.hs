@@ -3,9 +3,11 @@
 module Main where
 
 import Control.Arrow ((&&&))
+import Control.Lens (over)
 import Control.Monad (replicateM_)
 import Data.Char (isLower)
 import Data.Maybe (fromMaybe)
+import Linear.V2 (V2(..), _x, _y)
 
 import Text.Regex.Applicative ((=~), some, many, sym, psym, anySym, (<|>), asum)
 import Text.Regex.Applicative.Common (decimal)
@@ -17,7 +19,7 @@ data Part = Part { excellence, musicality, aerodynamism, shininess :: Int } deri
 type Label = String
 data Verdict = Accept | Reject deriving (Show, Eq)
 data Outcome = Final Verdict | Transition Label deriving Show
-data Field = Excellence | Musicality | Aerodynamism | Shininess deriving (Show, Enum, Bounded)
+data Field = Excellence | Musicality | Aerodynamism | Shininess deriving (Show, Eq, Ord, Enum, Bounded)
 data Op = Greater | Less deriving Show
 data Condition = Condition Field Op Int deriving Show
 data Step = Step Condition Outcome deriving Show
@@ -62,8 +64,24 @@ part1 (Input workflow parts) = sum . map score . filter ((== Accept) . go) $ par
         score :: Part -> Int
         score (Part x m a s) = x + m + a + s
 
-part2 :: Input CompiledWorkflow -> ()
-part2 = const ()
+type ConstraintSet = M.Map Field (V2 Int)
+
+part2 :: Input CompiledWorkflow -> Int
+part2 (Input workflow _) = sum . map countOptions . workflow $ Handler choose finalize
+  where finalize Reject = []
+        finalize Accept = [universe]
+        universe = M.fromList [(k, V2 1 4000) | k <- [minBound ..]]
+        choose (Condition f op limit) yes no = (require f op limit <$> yes) <> (forbid f op limit <$> no)
+        require k op limit = M.adjust f k
+          where f = case op of
+                      Less -> over _y (min (limit - 1))
+                      Greater -> over _x (max (limit + 1))
+        forbid k op limit = M.adjust f k
+          where f = case op of
+                      Less -> over _x (max limit)
+                      Greater -> over _y (min limit)
+        countOptions = product . map fieldOptions . M.elems
+        fieldOptions (V2 lo hi) = max 0 (hi - lo + 1)
 
 prepare :: String -> Input CompiledWorkflow
 prepare = fmap compile . fromMaybe (error "no parse") . (=~ input)
