@@ -1,3 +1,5 @@
+{-# LANGUAGE ImpredicativeTypes #-}
+
 module Main where
 
 import Control.Arrow ((&&&))
@@ -20,7 +22,8 @@ data Op = Greater | Less deriving Show
 data Condition = Condition Field Op Int deriving Show
 data Step = Step Condition Outcome deriving Show
 data Workflow = Workflow Label [Step] Outcome deriving Show
-type CompiledWorkflow = Part -> Verdict
+data Handler r = Handler { combine :: Condition -> r -> r -> r, final :: Verdict -> r }
+type CompiledWorkflow = forall r. Handler r -> r
 
 compile :: [Workflow] -> CompiledWorkflow
 compile flows = m M.! "in"
@@ -29,12 +32,18 @@ compile flows = m M.! "in"
         compileWorkFlow (Workflow label steps fallback) =
           (label, foldr compileStep (compileOutcome fallback) steps)
         compileOutcome :: Outcome -> CompiledWorkflow
-        compileOutcome (Final verdict) = const verdict
+        compileOutcome (Final verdict) = flip final verdict
         compileOutcome (Transition label) = m M.! label
         compileStep :: Step -> CompiledWorkflow -> CompiledWorkflow
-        compileStep (Step cond outcome) next =
-          compileCondition cond (compileOutcome outcome) next
-        compileCondition :: Condition -> CompiledWorkflow -> CompiledWorkflow -> CompiledWorkflow
+        compileStep (Step cond outcome) next k =
+          combine k cond (compileOutcome outcome k) (next k)
+
+data Input a = Input a [Part] deriving Functor
+
+part1 :: Input CompiledWorkflow -> Int
+part1 (Input workflow parts) = sum . map score . filter ((== Accept) . go) $ parts
+  where go = workflow (Handler compileCondition const)
+        compileCondition :: Condition -> (Part -> Verdict) -> (Part -> Verdict) -> (Part -> Verdict)
         compileCondition (Condition field op threshold) met failed = run
           where run p | acceptable p = met p
                       | otherwise = failed p
@@ -50,21 +59,14 @@ compile flows = m M.! "in"
         compileOp :: Op -> Int -> Int -> Bool
         compileOp Greater = (>)
         compileOp Less = (<)
+        score :: Part -> Int
+        score (Part x m a s) = x + m + a + s
 
-score :: Part -> Int
-score (Part x m a s) = x + m + a + s
-
-data Input = Input [Workflow] [Part] deriving Show
-
-part1 :: Input -> Int
-part1 (Input workflows parts) = sum . map score . filter ((== Accept) . run) $ parts
-  where run = compile workflows
-
-part2 :: Input -> ()
+part2 :: Input CompiledWorkflow -> ()
 part2 = const ()
 
-prepare :: String -> Input
-prepare = fromMaybe (error "no parse") . (=~ input)
+prepare :: String -> Input CompiledWorkflow
+prepare = fmap compile . fromMaybe (error "no parse") . (=~ input)
   where input = Input <$> some (workflow <* newline) <* newline <*> some (part <* newline)
         newline = sym '\n'
         p `sepBy` sep = ((:) <$> p <*> many (sep *> p)) <|> pure []
